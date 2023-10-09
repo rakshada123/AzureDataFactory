@@ -10,9 +10,8 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "output.csv",
-				"folderPath": "output",
-				"container": "sink"
+				"fileName": "Address.csv",
+				"container": "source"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",

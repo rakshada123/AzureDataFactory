@@ -1,0 +1,70 @@
+{
+	"name": "join_dataflow",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "testdata_input",
+						"type": "DatasetReference"
+					},
+					"name": "employee"
+				},
+				{
+					"dataset": {
+						"referenceName": "testdata_output",
+						"type": "DatasetReference"
+					},
+					"name": "Address"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "output",
+						"type": "DatasetReference"
+					},
+					"name": "sink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          Id as short,",
+				"          Employee as string,",
+				"          Designation as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> employee",
+				"source(output(",
+				"          Id as short,",
+				"          Location as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> Address",
+				"employee, Address join(employee@Id == Address@Id,",
+				"     joinType:'inner',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join1",
+				"join1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     input(",
+				"          Id as string,",
+				"          Employee as string,",
+				"          Designation as string,",
+				"          Location as string",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink"
+			]
+		}
+	}
+}

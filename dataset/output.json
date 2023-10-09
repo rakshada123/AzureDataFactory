@@ -1,0 +1,40 @@
+{
+	"name": "output",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Ops_Dev_Blob",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "test",
+				"container": "ops"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "Id",
+				"type": "String"
+			},
+			{
+				"name": "Employee",
+				"type": "String"
+			},
+			{
+				"name": "Designation",
+				"type": "String"
+			},
+			{
+				"name": "Location",
+				"type": "String"
+			}
+		]
+	}
+}
