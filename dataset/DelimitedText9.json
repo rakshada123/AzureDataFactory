@@ -11,7 +11,7 @@
 			"location": {
 				"type": "AzureBlobStorageLocation",
 				"fileName": {
-					"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime (addHours(utcNow(),8),'yyyy_MM_dd_HHmmss'),'.csv')",
+					"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime(addHours(utcNow(),8),'yyyy_MM_dd_HHmmss'),'.csv')",
 					"type": "Expression"
 				},
 				"folderPath": "BCP_MEAL_PROD",
