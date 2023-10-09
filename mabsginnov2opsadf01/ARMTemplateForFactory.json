@@ -1,0 +1,1433 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "mabsginnov2opsadf01"
+		},
+		"AODB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AODB'"
+		},
+		"AODB_DEV_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AODB_DEV'"
+		},
+		"AzureBlobStorage_test_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage_test'"
+		},
+		"Enrich_Blob_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Enrich_Blob'"
+		},
+		"Ops_Dev_Blob_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Ops_Dev_Blob'"
+		},
+		"BCP_CATERING_BLOB_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'BCP_CATERING_BLOB'"
+		},
+		"KV_OPS_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://mabsginnov2opskv01.vault.azure.net/"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/BCP_CATERING_MEAL')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Copy_Meal_Data_Blob",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "Db2Source",
+								"query": "SELECT F.ID AS FLT_ID,\n       M.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\n       LISTAGG(SSR_CODE,\n       ', ') SSR_CODE,\n       UCI,\n       'MEAL' AS TYPE,\n       HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\n   FROM AODB.FLIGHT_SKED F \n   INNER JOIN      \n   AODB.FLIGHT_MEAL_DCS_1A M ON F.ID = M.FK_FLIGHT_SKED_ID\n   WHERE  F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS  \n   GROUP BY F.ID ,\n       M.FLT_NBR,\n       F.FLT_SKED_ORIGIN ,\n       F.FLT_SKED_DESTINATION ,\n       F.FLT_SKED_STD_MLT ,\n       F.FLT_SKED_STD_UTC ,\n       F.FLT_ACFT_REGN,\n       UCI      \nUNION ALL       \nSELECT F.ID AS FLT_ID,F.FLT_AIRLINE || F.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\nLISTAGG(PAX_CLS,', ') CLASS,\nUCI,\n'PAX' AS TYPE , HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\nFROM AODB.FLIGHT_SKED F \n   INNER JOIN \nAODB.PAX_DETAILS pd ON F.ID = PD.FK_FLIGHT_SKED_ID  WHERE PD.STATUS <> 'D' \nAND   F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS\nGROUP BY F.ID ,\n        F.FLT_AIRLINE || F.FLT_NBR ,\n       F.FLT_SKED_ORIGIN ,\n       F.FLT_SKED_DESTINATION ,\n       F.FLT_SKED_STD_MLT ,\n       F.FLT_SKED_STD_UTC ,\n       F.FLT_ACFT_REGN,\n       UCI       \nUNION ALL\nSELECT F.ID AS FLT_ID,\n       SSR.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\n       LISTAGG(SSR_CODE,\n       ', ') SSR_CODE,\n       UCI,\n       'SSR' AS TYPE,\n       HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\n   FROM AODB.FLIGHT_SKED F \n   INNER JOIN   \n   AODB.FLIGHT_SSR_DCS_1A SSR ON F.ID = SSR.FK_FLIGHT_SKED_ID\n   WHERE   SSR.SSR_CODE LIKE '%ML' \n   AND      F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS\n       --AND SSR_CODE IN ('WCHR', 'MAAS', 'MEDA')\n   GROUP BY F.ID,\n      SSR.FLT_NBR,\n       F.FLT_SKED_ORIGIN ,\n       F.FLT_SKED_DESTINATION ,\n       F.FLT_SKED_STD_MLT ,\n       F.FLT_SKED_STD_UTC ,\n       F.FLT_ACFT_REGN,\n       UCI \n       \n UNION ALL       \n SELECT F.ID AS FLT_ID,CMS.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\n RANK,\n CAST(ROW_NUMBER() OVER(ORDER BY STAFF_NO) AS VARCHAR(100)) AS UCI,\n 'CREW' AS TYPE ,\n HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\n FROM AODB.FLIGHT_SKED F \n   INNER JOIN \n AODB.CMS_DCS_CREW_LIST CMS ON F.ID = CMS.FK_FLIGHT_SKED_ID\n WHERE   F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS  \n AND CMS.ACTION_TYPE = 'INSERT' \n ORDER BY FLT_NBR"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings",
+									"copyBehavior": "PreserveHierarchy"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".csv"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "Db2Table2",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DelimitedText9",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "BCP_CATERING"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-10-01T05:44:34Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Db2Table2')]",
+				"[concat(variables('factoryId'), '/datasets/DelimitedText9')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Join_dataflow_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Data flow1",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "join_dataflow",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"employee": {},
+									"Address": {},
+									"sink": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Rakshada"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/join_dataflow')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/demopipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Copy data pipeline for practice",
+				"activities": [
+					{
+						"name": "Copy data1",
+						"type": "Copy",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "testdata_input",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "testdata_output",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"folder": {
+					"name": "Rakshada"
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-09-26T08:00:20Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/testdata_input')]",
+				"[concat(variables('factoryId'), '/datasets/testdata_output')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Call AODB Procedure",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "Db2Source",
+								"query": "call AODB.GET_ENRICH_DATA_Test ( )"
+							},
+							"dataset": {
+								"referenceName": "Db2Table1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						}
+					},
+					{
+						"name": "Generate Enrich File",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Call AODB Procedure",
+								"dependencyConditions": [
+									"Completed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "Db2Source",
+								"query": "call AODB.GET_ENRICH_DATA_Test ( )"
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings",
+									"copyBehavior": "FlattenHierarchy"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "Db2Table1",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DelimitedText2",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-09-13T11:43:28Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/Db2Table1')]",
+				"[concat(variables('factoryId'), '/datasets/DelimitedText2')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BCP_Catering_Meal')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime(addHours(utcNow(),8),'YYYY_MM_DD_THHMINSS'),'.csv')",
+							"type": "Expression"
+						},
+						"folderPath": "BCP_MEAL",
+						"container": "icos"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Binary1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "*",
+						"folderPath": "BCP_MEAL",
+						"container": "icos"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Db2Table1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AODB_DEV",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Db2Table",
+				"schema": [],
+				"typeProperties": {
+					"schema": "AODB",
+					"table": "A350_ROLLS_ROYCE"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AODB_DEV')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Db2Table2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AODB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Db2Table",
+				"schema": [],
+				"typeProperties": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AODB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Enrich_20230913_144519.csv",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText3')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "test",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "STD",
+						"type": "String"
+					},
+					{
+						"name": "FLIGHT_CODE",
+						"type": "String"
+					},
+					{
+						"name": "FLT_NBR",
+						"type": "String"
+					},
+					{
+						"name": "FLT_ORIGIN",
+						"type": "String"
+					},
+					{
+						"name": "FLT_SKED_DESTINATION",
+						"type": "String"
+					},
+					{
+						"name": "PAX_SEAT",
+						"type": "String"
+					},
+					{
+						"name": "PAX_CLS",
+						"type": "String"
+					},
+					{
+						"name": "PAX_NAME",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_NBR",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "ACCESS_CODE",
+						"type": "String"
+					},
+					{
+						"name": "SUBCATEGORY",
+						"type": "String"
+					},
+					{
+						"name": "TRFC_COST_CENTRE",
+						"type": "String"
+					},
+					{
+						"name": "REMARKS",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_STATION",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_ACCESS_CHARGES",
+						"type": "String"
+					},
+					{
+						"name": "CURRENCY",
+						"type": "String"
+					},
+					{
+						"name": "ENTRY_TIME",
+						"type": "String"
+					},
+					{
+						"name": "REG_BY",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText4')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Enrich_20230913_143509.csv",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "STD",
+						"type": "String"
+					},
+					{
+						"name": "FLIGHT_CODE",
+						"type": "String"
+					},
+					{
+						"name": "FLT_NBR",
+						"type": "String"
+					},
+					{
+						"name": "FLT_ORIGIN",
+						"type": "String"
+					},
+					{
+						"name": "FLT_SKED_DESTINATION",
+						"type": "String"
+					},
+					{
+						"name": "PAX_SEAT",
+						"type": "String"
+					},
+					{
+						"name": "PAX_CLS",
+						"type": "String"
+					},
+					{
+						"name": "PAX_NAME",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_NBR",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "ACCESS_CODE",
+						"type": "String"
+					},
+					{
+						"name": "SUBCATEGORY",
+						"type": "String"
+					},
+					{
+						"name": "TRFC_COST_CENTRE",
+						"type": "String"
+					},
+					{
+						"name": "REMARKS",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_STATION",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_ACCESS_CHARGES",
+						"type": "String"
+					},
+					{
+						"name": "CURRENCY",
+						"type": "String"
+					},
+					{
+						"name": "ENTRY_TIME",
+						"type": "String"
+					},
+					{
+						"name": "REG_BY",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText5')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Enrich_20230913_143509.csv",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "STD",
+						"type": "String"
+					},
+					{
+						"name": "FLIGHT_CODE",
+						"type": "String"
+					},
+					{
+						"name": "FLT_NBR",
+						"type": "String"
+					},
+					{
+						"name": "FLT_ORIGIN",
+						"type": "String"
+					},
+					{
+						"name": "FLT_SKED_DESTINATION",
+						"type": "String"
+					},
+					{
+						"name": "PAX_SEAT",
+						"type": "String"
+					},
+					{
+						"name": "PAX_CLS",
+						"type": "String"
+					},
+					{
+						"name": "PAX_NAME",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_NBR",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "ACCESS_CODE",
+						"type": "String"
+					},
+					{
+						"name": "SUBCATEGORY",
+						"type": "String"
+					},
+					{
+						"name": "TRFC_COST_CENTRE",
+						"type": "String"
+					},
+					{
+						"name": "REMARKS",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_STATION",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_ACCESS_CHARGES",
+						"type": "String"
+					},
+					{
+						"name": "CURRENCY",
+						"type": "String"
+					},
+					{
+						"name": "ENTRY_TIME",
+						"type": "String"
+					},
+					{
+						"name": "REG_BY",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText7')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "Archive",
+						"container": "icos"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText8')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Ops_Dev_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime(addHours(utcNow(),8),'yyyy_MM_dd_HHmmss'),'.csv')",
+							"type": "Expression"
+						},
+						"folderPath": "bcp_catering",
+						"container": "ops"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Ops_Dev_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText9')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime(addHours(utcNow(),8),'yyyy_MM_dd_HHmmss'),'.csv')",
+							"type": "Expression"
+						},
+						"folderPath": "BCP_MEAL_PROD",
+						"container": "icos"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/output')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Ops_Dev_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "test",
+						"container": "ops"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Id",
+						"type": "String"
+					},
+					{
+						"name": "Employee",
+						"type": "String"
+					},
+					{
+						"name": "Designation",
+						"type": "String"
+					},
+					{
+						"name": "Location",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Ops_Dev_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/output_join')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage_test",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "output",
+						"container": "sink"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Year",
+						"type": "String"
+					},
+					{
+						"name": "Industry_aggregation_NZSIOC",
+						"type": "String"
+					},
+					{
+						"name": "Industry_code_NZSIOC",
+						"type": "String"
+					},
+					{
+						"name": "Industry_name_NZSIOC",
+						"type": "String"
+					},
+					{
+						"name": "Units",
+						"type": "String"
+					},
+					{
+						"name": "Variable_code",
+						"type": "String"
+					},
+					{
+						"name": "Variable_name",
+						"type": "String"
+					},
+					{
+						"name": "Variable_category",
+						"type": "String"
+					},
+					{
+						"name": "Value",
+						"type": "String"
+					},
+					{
+						"name": "Industry_code_ANZSIC06",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage_test')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/testdata_input')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage_test",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "employee.csv",
+						"container": "source"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage_test')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/testdata_output')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage_test",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Address.csv",
+						"container": "source"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage_test')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AODB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "Db2",
+				"typeProperties": {
+					"connectionString": "[parameters('AODB_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "IE-FLT-OPS",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/IE-FLT-OPS')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AODB_DEV')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "Db2",
+				"typeProperties": {
+					"connectionString": "[parameters('AODB_DEV_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "IR-SYED-LOCAL",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/IR-SYED-LOCAL')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureBlobStorage_test')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('AzureBlobStorage_test_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BCP_CATERING_BLOB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"sasUri": "[parameters('BCP_CATERING_BLOB_sasUri')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Enrich_Blob')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('Enrich_Blob_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KV_OPS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('KV_OPS_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Ops_Dev_Blob')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('Ops_Dev_Blob_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BCP_Catering_Trigger')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "BCP_CATERING_MEAL",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Minute",
+						"interval": 60,
+						"startTime": "2023-09-30T06:00:00",
+						"timeZone": "Singapore Standard Time"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/BCP_CATERING_MEAL')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureIR-test')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "Central India",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 10,
+							"cleanup": false,
+							"customProperties": []
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureIRDemo')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "Central India",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 10,
+							"cleanup": false,
+							"customProperties": []
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/IE-FLT-OPS')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/IR-SYED-LOCAL')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/filter_dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "testdata_input",
+								"type": "DatasetReference"
+							},
+							"name": "employee"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "output",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "filter1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as short,",
+						"          Employee as string,",
+						"          Designation as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> employee",
+						"employee filter(Id == 104) ~> filter1",
+						"filter1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Id as string,",
+						"          Employee as string,",
+						"          Designation as string,",
+						"          Location as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/testdata_input')]",
+				"[concat(variables('factoryId'), '/datasets/output')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/join_dataflow')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "testdata_input",
+								"type": "DatasetReference"
+							},
+							"name": "employee"
+						},
+						{
+							"dataset": {
+								"referenceName": "testdata_output",
+								"type": "DatasetReference"
+							},
+							"name": "Address"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "output_join",
+								"type": "DatasetReference"
+							},
+							"name": "sink"
+						}
+					],
+					"transformations": [
+						{
+							"name": "join1"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          Id as short,",
+						"          Employee as string,",
+						"          Designation as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> employee",
+						"source(output(",
+						"          Id as short,",
+						"          Location as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false) ~> Address",
+						"employee, Address join(employee@Id == Address@Id,",
+						"     joinType:'inner',",
+						"     matchType:'exact',",
+						"     ignoreSpaces: false,",
+						"     broadcast: 'auto')~> join1",
+						"join1 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          Year as string,",
+						"          Industry_aggregation_NZSIOC as string,",
+						"          Industry_code_NZSIOC as string,",
+						"          Industry_name_NZSIOC as string,",
+						"          Units as string,",
+						"          Variable_code as string,",
+						"          Variable_name as string,",
+						"          Variable_category as string,",
+						"          Value as string,",
+						"          Industry_code_ANZSIC06 as string",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> sink"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/testdata_input')]",
+				"[concat(variables('factoryId'), '/datasets/testdata_output')]",
+				"[concat(variables('factoryId'), '/datasets/output_join')]"
+			]
+		}
+	]
+}

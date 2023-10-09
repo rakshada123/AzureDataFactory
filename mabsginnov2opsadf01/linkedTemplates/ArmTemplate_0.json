@@ -1,0 +1,742 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "mabsginnov2opsadf01"
+		},
+		"AzureBlobStorage_test_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage_test'"
+		},
+		"Enrich_Blob_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Enrich_Blob'"
+		},
+		"Ops_Dev_Blob_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Ops_Dev_Blob'"
+		},
+		"BCP_CATERING_BLOB_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'BCP_CATERING_BLOB'"
+		},
+		"KV_OPS_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://mabsginnov2opskv01.vault.azure.net/"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureBlobStorage_test')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('AzureBlobStorage_test_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BCP_CATERING_BLOB')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"sasUri": "[parameters('BCP_CATERING_BLOB_sasUri')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Enrich_Blob')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('Enrich_Blob_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/KV_OPS')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('KV_OPS_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Ops_Dev_Blob')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('Ops_Dev_Blob_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureIR-test')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "Central India",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 10,
+							"cleanup": false,
+							"customProperties": []
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureIRDemo')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "Central India",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 10,
+							"cleanup": false,
+							"customProperties": []
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/IE-FLT-OPS')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/IR-SYED-LOCAL')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/BCP_Catering_Meal')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime(addHours(utcNow(),8),'YYYY_MM_DD_THHMINSS'),'.csv')",
+							"type": "Expression"
+						},
+						"folderPath": "BCP_MEAL",
+						"container": "icos"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Binary1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "*",
+						"folderPath": "BCP_MEAL",
+						"container": "icos"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Enrich_20230913_144519.csv",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText3')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "test",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "STD",
+						"type": "String"
+					},
+					{
+						"name": "FLIGHT_CODE",
+						"type": "String"
+					},
+					{
+						"name": "FLT_NBR",
+						"type": "String"
+					},
+					{
+						"name": "FLT_ORIGIN",
+						"type": "String"
+					},
+					{
+						"name": "FLT_SKED_DESTINATION",
+						"type": "String"
+					},
+					{
+						"name": "PAX_SEAT",
+						"type": "String"
+					},
+					{
+						"name": "PAX_CLS",
+						"type": "String"
+					},
+					{
+						"name": "PAX_NAME",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_NBR",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "ACCESS_CODE",
+						"type": "String"
+					},
+					{
+						"name": "SUBCATEGORY",
+						"type": "String"
+					},
+					{
+						"name": "TRFC_COST_CENTRE",
+						"type": "String"
+					},
+					{
+						"name": "REMARKS",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_STATION",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_ACCESS_CHARGES",
+						"type": "String"
+					},
+					{
+						"name": "CURRENCY",
+						"type": "String"
+					},
+					{
+						"name": "ENTRY_TIME",
+						"type": "String"
+					},
+					{
+						"name": "REG_BY",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText4')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Enrich_20230913_143509.csv",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "STD",
+						"type": "String"
+					},
+					{
+						"name": "FLIGHT_CODE",
+						"type": "String"
+					},
+					{
+						"name": "FLT_NBR",
+						"type": "String"
+					},
+					{
+						"name": "FLT_ORIGIN",
+						"type": "String"
+					},
+					{
+						"name": "FLT_SKED_DESTINATION",
+						"type": "String"
+					},
+					{
+						"name": "PAX_SEAT",
+						"type": "String"
+					},
+					{
+						"name": "PAX_CLS",
+						"type": "String"
+					},
+					{
+						"name": "PAX_NAME",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_NBR",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "ACCESS_CODE",
+						"type": "String"
+					},
+					{
+						"name": "SUBCATEGORY",
+						"type": "String"
+					},
+					{
+						"name": "TRFC_COST_CENTRE",
+						"type": "String"
+					},
+					{
+						"name": "REMARKS",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_STATION",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_ACCESS_CHARGES",
+						"type": "String"
+					},
+					{
+						"name": "CURRENCY",
+						"type": "String"
+					},
+					{
+						"name": "ENTRY_TIME",
+						"type": "String"
+					},
+					{
+						"name": "REG_BY",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText5')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Enrich_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "Enrich_20230913_143509.csv",
+						"folderPath": "uat",
+						"container": "golden-lounge-access"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "STD",
+						"type": "String"
+					},
+					{
+						"name": "FLIGHT_CODE",
+						"type": "String"
+					},
+					{
+						"name": "FLT_NBR",
+						"type": "String"
+					},
+					{
+						"name": "FLT_ORIGIN",
+						"type": "String"
+					},
+					{
+						"name": "FLT_SKED_DESTINATION",
+						"type": "String"
+					},
+					{
+						"name": "PAX_SEAT",
+						"type": "String"
+					},
+					{
+						"name": "PAX_CLS",
+						"type": "String"
+					},
+					{
+						"name": "PAX_NAME",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_NBR",
+						"type": "String"
+					},
+					{
+						"name": "PAX_FQTV_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "ACCESS_CODE",
+						"type": "String"
+					},
+					{
+						"name": "SUBCATEGORY",
+						"type": "String"
+					},
+					{
+						"name": "TRFC_COST_CENTRE",
+						"type": "String"
+					},
+					{
+						"name": "REMARKS",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_STATION",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_TYPE",
+						"type": "String"
+					},
+					{
+						"name": "LOUNGE_ACCESS_CHARGES",
+						"type": "String"
+					},
+					{
+						"name": "CURRENCY",
+						"type": "String"
+					},
+					{
+						"name": "ENTRY_TIME",
+						"type": "String"
+					},
+					{
+						"name": "REG_BY",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Enrich_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText7')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "Archive",
+						"container": "icos"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText8')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Ops_Dev_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime(addHours(utcNow(),8),'yyyy_MM_dd_HHmmss'),'.csv')",
+							"type": "Expression"
+						},
+						"folderPath": "bcp_catering",
+						"container": "ops"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Ops_Dev_Blob')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DelimitedText9')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "BCP_CATERING_BLOB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime(addHours(utcNow(),8),'yyyy_MM_dd_HHmmss'),'.csv')",
+							"type": "Expression"
+						},
+						"folderPath": "BCP_MEAL_PROD",
+						"container": "icos"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/BCP_CATERING_BLOB')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/output')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "Ops_Dev_Blob",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "test",
+						"container": "ops"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "Id",
+						"type": "String"
+					},
+					{
+						"name": "Employee",
+						"type": "String"
+					},
+					{
+						"name": "Designation",
+						"type": "String"
+					},
+					{
+						"name": "Location",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Ops_Dev_Blob')]"
+			]
+		}
+	]
+}

@@ -1,0 +1,111 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "mabsginnov2opsadf01"
+		},
+		"AODB_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AODB'"
+		},
+		"AODB_DEV_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AODB_DEV'"
+		},
+		"AzureBlobStorage_test_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage_test'"
+		},
+		"Enrich_Blob_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Enrich_Blob'"
+		},
+		"Ops_Dev_Blob_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Ops_Dev_Blob'"
+		},
+		"BCP_CATERING_BLOB_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'BCP_CATERING_BLOB'"
+		},
+		"KV_OPS_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://mabsginnov2opskv01.vault.azure.net/"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "mabsginnov2opsadf01_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AzureBlobStorage_test_connectionString": {
+						"value": "[parameters('AzureBlobStorage_test_connectionString')]"
+					},
+					"Enrich_Blob_connectionString": {
+						"value": "[parameters('Enrich_Blob_connectionString')]"
+					},
+					"Ops_Dev_Blob_connectionString": {
+						"value": "[parameters('Ops_Dev_Blob_connectionString')]"
+					},
+					"BCP_CATERING_BLOB_sasUri": {
+						"value": "[parameters('BCP_CATERING_BLOB_sasUri')]"
+					},
+					"KV_OPS_properties_typeProperties_baseUrl": {
+						"value": "[parameters('KV_OPS_properties_typeProperties_baseUrl')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "mabsginnov2opsadf01_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AODB_connectionString": {
+						"value": "[parameters('AODB_connectionString')]"
+					},
+					"AODB_DEV_connectionString": {
+						"value": "[parameters('AODB_DEV_connectionString')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'mabsginnov2opsadf01_ArmTemplate_0')]"
+			]
+		}
+	]
+}

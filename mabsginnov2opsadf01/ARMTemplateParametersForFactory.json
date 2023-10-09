@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "mabsginnov2opsadf01"
+		},
+		"AODB_connectionString": {
+			"value": ""
+		},
+		"AODB_DEV_connectionString": {
+			"value": ""
+		},
+		"AzureBlobStorage_test_connectionString": {
+			"value": ""
+		},
+		"Enrich_Blob_connectionString": {
+			"value": ""
+		},
+		"Ops_Dev_Blob_connectionString": {
+			"value": ""
+		},
+		"BCP_CATERING_BLOB_sasUri": {
+			"value": ""
+		},
+		"KV_OPS_properties_typeProperties_baseUrl": {
+			"value": "https://mabsginnov2opskv01.vault.azure.net/"
+		}
+	}
+}
