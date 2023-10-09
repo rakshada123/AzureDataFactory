@@ -22,7 +22,7 @@
 			"sinks": [
 				{
 					"dataset": {
-						"referenceName": "output",
+						"referenceName": "output_join",
 						"type": "DatasetReference"
 					},
 					"name": "sink"
@@ -57,10 +57,16 @@
 				"join1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
-				"          Id as string,",
-				"          Employee as string,",
-				"          Designation as string,",
-				"          Location as string",
+				"          Year as string,",
+				"          Industry_aggregation_NZSIOC as string,",
+				"          Industry_code_NZSIOC as string,",
+				"          Industry_name_NZSIOC as string,",
+				"          Units as string,",
+				"          Variable_code as string,",
+				"          Variable_name as string,",
+				"          Variable_category as string,",
+				"          Value as string,",
+				"          Industry_code_ANZSIC06 as string",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
 				"     skipDuplicateMapOutputs: true) ~> sink"
