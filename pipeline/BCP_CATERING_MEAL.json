@@ -1,0 +1,65 @@
+{
+	"name": "BCP_CATERING_MEAL",
+	"properties": {
+		"activities": [
+			{
+				"name": "Copy_Meal_Data_Blob",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "Db2Source",
+						"query": "SELECT F.ID AS FLT_ID,\n       M.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\n       LISTAGG(SSR_CODE,\n       ', ') SSR_CODE,\n       UCI,\n       'MEAL' AS TYPE,\n       HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\n   FROM AODB.FLIGHT_SKED F \n   INNER JOIN      \n   AODB.FLIGHT_MEAL_DCS_1A M ON F.ID = M.FK_FLIGHT_SKED_ID\n   WHERE  F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS  \n   GROUP BY F.ID ,\n       M.FLT_NBR,\n       F.FLT_SKED_ORIGIN ,\n       F.FLT_SKED_DESTINATION ,\n       F.FLT_SKED_STD_MLT ,\n       F.FLT_SKED_STD_UTC ,\n       F.FLT_ACFT_REGN,\n       UCI      \nUNION ALL       \nSELECT F.ID AS FLT_ID,F.FLT_AIRLINE || F.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\nLISTAGG(PAX_CLS,', ') CLASS,\nUCI,\n'PAX' AS TYPE , HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\nFROM AODB.FLIGHT_SKED F \n   INNER JOIN \nAODB.PAX_DETAILS pd ON F.ID = PD.FK_FLIGHT_SKED_ID  WHERE PD.STATUS <> 'D' \nAND   F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS\nGROUP BY F.ID ,\n        F.FLT_AIRLINE || F.FLT_NBR ,\n       F.FLT_SKED_ORIGIN ,\n       F.FLT_SKED_DESTINATION ,\n       F.FLT_SKED_STD_MLT ,\n       F.FLT_SKED_STD_UTC ,\n       F.FLT_ACFT_REGN,\n       UCI       \nUNION ALL\nSELECT F.ID AS FLT_ID,\n       SSR.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\n       LISTAGG(SSR_CODE,\n       ', ') SSR_CODE,\n       UCI,\n       'SSR' AS TYPE,\n       HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\n   FROM AODB.FLIGHT_SKED F \n   INNER JOIN   \n   AODB.FLIGHT_SSR_DCS_1A SSR ON F.ID = SSR.FK_FLIGHT_SKED_ID\n   WHERE   SSR.SSR_CODE LIKE '%ML' \n   AND      F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS\n       --AND SSR_CODE IN ('WCHR', 'MAAS', 'MEDA')\n   GROUP BY F.ID,\n      SSR.FLT_NBR,\n       F.FLT_SKED_ORIGIN ,\n       F.FLT_SKED_DESTINATION ,\n       F.FLT_SKED_STD_MLT ,\n       F.FLT_SKED_STD_UTC ,\n       F.FLT_ACFT_REGN,\n       UCI \n       \n UNION ALL       \n SELECT F.ID AS FLT_ID,CMS.FLT_NBR  AS FLT_NBR,\n       F.FLT_SKED_ORIGIN AS  FLT_ORIGIN,\n       F.FLT_SKED_DESTINATION AS FLT_DESTINATION,\n       F.FLT_SKED_STD_MLT AS  STD_MLT,\n       F.FLT_SKED_STD_UTC AS STD_UTC,\n       F.FLT_ACFT_REGN AS ACFT_REGN,\n       (SELECT aca.FITTED_CONFIG  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN) AS CONFIG,\n       (SELECT aca.ACFT_TYPE  FROM AODB.AIRCRAFT_CAPACITY_1A aca WHERE aca.ACFT_REGN = F.FLT_ACFT_REGN)  AS ACT_TYPE,\n RANK,\n CAST(ROW_NUMBER() OVER(ORDER BY STAFF_NO) AS VARCHAR(100)) AS UCI,\n 'CREW' AS TYPE ,\n HOURS_BETWEEN(F.FLT_SKED_STD_MLT,CURRENT timestamp) AS Hours_Difference\n FROM AODB.FLIGHT_SKED F \n   INNER JOIN \n AODB.CMS_DCS_CREW_LIST CMS ON F.ID = CMS.FK_FLIGHT_SKED_ID\n WHERE   F.FLT_SKED_ORIGIN = 'KUL' AND F.FLT_SKED_DESTINATION NOT IN ('LHR','AKL','KIX','HND','DOH','COK') AND F.FLT_SKED_STD_MLT BETWEEN  CURRENT timestamp AND CURRENT timestamp + 24 HOURS  \n AND CMS.ACTION_TYPE = 'INSERT' \n ORDER BY FLT_NBR"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings",
+							"copyBehavior": "PreserveHierarchy"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".csv"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "Db2Table2",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DelimitedText9",
+						"type": "DatasetReference"
+					}
+				]
+			}
+		],
+		"folder": {
+			"name": "BCP_CATERING"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-10-01T05:44:34Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

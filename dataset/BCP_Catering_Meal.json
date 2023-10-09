@@ -1,0 +1,28 @@
+{
+	"name": "BCP_Catering_Meal",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "BCP_CATERING_BLOB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime (addHours(utcNow(),8),'YYYY_MM_DD_THHMINSS'),'.csv')",
+					"type": "Expression"
+				},
+				"folderPath": "BCP_MEAL",
+				"container": "icos"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

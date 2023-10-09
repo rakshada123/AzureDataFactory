@@ -1,0 +1,24 @@
+{
+	"name": "BCP_Catering_Trigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "BCP_CATERING_MEAL",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Minute",
+				"interval": 60,
+				"startTime": "2023-09-30T06:00:00",
+				"timeZone": "Singapore Standard Time"
+			}
+		}
+	}
+}

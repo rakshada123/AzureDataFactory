@@ -1,0 +1,9 @@
+{
+	"name": "mabsginnov2opsadf01",
+	"location": "southeastasia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "38860057-4b82-414c-84a9-9428082bb7c1",
+		"tenantId": "cb05c771-f9e6-458c-a158-67b16e839f99"
+	}
+}

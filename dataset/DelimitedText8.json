@@ -1,0 +1,28 @@
+{
+	"name": "DelimitedText8",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Ops_Dev_Blob",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": {
+					"value": "@concat('BCP_CATERING_MEAL','_',formatDateTime (addHours(utcNow(),8),'yyyy_MM_dd_HHmmss'),'.csv')",
+					"type": "Expression"
+				},
+				"folderPath": "bcp_catering",
+				"container": "ops"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

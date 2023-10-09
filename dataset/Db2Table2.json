@@ -1,0 +1,13 @@
+{
+	"name": "Db2Table2",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AODB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Db2Table",
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

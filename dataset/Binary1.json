@@ -1,0 +1,20 @@
+{
+	"name": "Binary1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "BCP_CATERING_BLOB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "*",
+				"folderPath": "BCP_MEAL",
+				"container": "icos"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

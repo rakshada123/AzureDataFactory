@@ -1,0 +1,16 @@
+{
+	"name": "AODB_DEV",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "Db2",
+		"typeProperties": {
+			"connectionString": "server=10.217.6.105:50000;database=air_ops;username=bpmdbdev;authenticationtype=Basic",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiI0NTM0NDIzYS0xNzIzLTQxNjQtYTllYS1kZTFkM2YyYjRiOWIiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "IR-SYED-LOCAL",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

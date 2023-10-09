@@ -1,0 +1,16 @@
+{
+	"name": "AODB",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "Db2",
+		"typeProperties": {
+			"connectionString": "server=10.211.6.12;database=air_ops;username=bpmdbprd;authenticationtype=Basic",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiJkNTA3NmYyMS1hNDVhLTRiMGItYjY2OC1kMTQ3OTI3YmIxYTkiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "IE-FLT-OPS",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

@@ -1,0 +1,106 @@
+{
+	"name": "DelimitedText5",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "Enrich_Blob",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "Enrich_20230913_143509.csv",
+				"folderPath": "uat",
+				"container": "golden-lounge-access"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "STD",
+				"type": "String"
+			},
+			{
+				"name": "FLIGHT_CODE",
+				"type": "String"
+			},
+			{
+				"name": "FLT_NBR",
+				"type": "String"
+			},
+			{
+				"name": "FLT_ORIGIN",
+				"type": "String"
+			},
+			{
+				"name": "FLT_SKED_DESTINATION",
+				"type": "String"
+			},
+			{
+				"name": "PAX_SEAT",
+				"type": "String"
+			},
+			{
+				"name": "PAX_CLS",
+				"type": "String"
+			},
+			{
+				"name": "PAX_NAME",
+				"type": "String"
+			},
+			{
+				"name": "PAX_FQTV_NBR",
+				"type": "String"
+			},
+			{
+				"name": "PAX_FQTV_TYPE",
+				"type": "String"
+			},
+			{
+				"name": "ACCESS_CODE",
+				"type": "String"
+			},
+			{
+				"name": "SUBCATEGORY",
+				"type": "String"
+			},
+			{
+				"name": "TRFC_COST_CENTRE",
+				"type": "String"
+			},
+			{
+				"name": "REMARKS",
+				"type": "String"
+			},
+			{
+				"name": "LOUNGE_STATION",
+				"type": "String"
+			},
+			{
+				"name": "LOUNGE_TYPE",
+				"type": "String"
+			},
+			{
+				"name": "LOUNGE_ACCESS_CHARGES",
+				"type": "String"
+			},
+			{
+				"name": "CURRENCY",
+				"type": "String"
+			},
+			{
+				"name": "ENTRY_TIME",
+				"type": "String"
+			},
+			{
+				"name": "REG_BY",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

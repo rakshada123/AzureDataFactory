@@ -1,0 +1,17 @@
+{
+	"name": "Db2Table1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AODB_DEV",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Db2Table",
+		"schema": [],
+		"typeProperties": {
+			"schema": "AODB",
+			"table": "A350_ROLLS_ROYCE"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}
