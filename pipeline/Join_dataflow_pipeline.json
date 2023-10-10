@@ -30,6 +30,8 @@
 		"folder": {
 			"name": "Rakshada"
 		},
-		"annotations": []
-	}
+		"annotations": [],
+		"lastPublishTime": "2023-10-09T17:34:23Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }
